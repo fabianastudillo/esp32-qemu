@@ -1,0 +1,36 @@
+---
+
+- name: Setup raspberry pi
+  hosts: pi
+  tasks:
+
+    - name: Install python-pip, gunicorn, lsof and dependency
+      apt:
+        name:
+          - libssl-dev  # needed for pip
+          - python-pip
+          - gunicorn
+          - lsof
+        update_cache: yes
+        autoclean: yes
+        state: present
+      
+      become: True
+        
+    - name: Pip install falcon
+      pip: 
+        name: falcon
+      become: True
+
+    - name: Kill previous process running on port 8000, if exists
+      become: yes
+      shell: "pkill -9 $(lsof -t -i:8000)"
+      ignore_errors: True
+
+    - name: Copy server.py into remote
+      copy:
+        src: ./server.py
+        dest: /home/pi
+
+    - name: Start server with gunicorn
+      shell: "cd /home/pi; nohup gunicorn -b 0.0.0.0:8000 server:app </dev/null >/dev/null 2>&1 &"

@@ -1,0 +1,86 @@
+# Copyright(C) 2021, Botnet Detection Framework
+# Written by Fabian Astudillo Salinas <fabian.astudillos@ucuenca.edu.ec>
+#
+# This file comes with ABSOLUTELY NO WARRANTY!
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+version: '3.4'
+
+networks:
+  network:
+
+volumes:
+  esp32-data: #path where the arduino output resides
+  esp32-log:
+
+services:
+  raspberry:
+    build: ./raspberry
+    ports:
+      - "2222:2222"
+      - "8000:8000"
+
+  esp32-dev:
+    build: ./esp32-dev
+    ports:
+      - "5555"
+      - "3333"
+      - "1234"
+    depends_on:
+      - raspberry
+    volumes:
+      - ./workspace/current/:/root/
+      
+  esp32-qemu:
+    build:
+      context: esp32-qemu/
+    container_name: esp32-qemu
+    image: esp32-qemu
+#    entrypoint: /new_entrypoint.sh
+#    depends_on:
+#      elasticsearch:
+#        condition: service_healthy
+#    environment: 
+#      - TZ=America/Guayaquil
+    environment:
+      # https://www.cloudsavvyit.com/10520/how-to-run-gui-applications-in-a-docker-container/
+      # to allow the docker user X access use the command <<< xhost +"local:docker@" >>>
+      # DISPLAY=":0" --> Linux
+      # DISPLAY="IP:0.0" --> Windows, instalar xming y habilitar "no control access"
+      - DISPLAY=${DISPLAY}
+    networks: 
+      network:
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl --silent --fail elasticsearch:9200 || exit 1"]
+#      interval: 30s
+#      timeout: 5s
+#      retries: 3
+#      start_period: 30s
+#    command: 
+#      - sh -c "/usr/local/bin/init.sh && exec chmod +x /esp32-bin/*"
+#      - sh -c "/usr/local/bin/init.sh && exec export PATH=$PATH:/esp32-bin"
+    volumes:
+      - esp32-log:/var/log/esp32
+      - esp32-data:/root
+      - ./src:/esp32-bin
+      - ./workspace:/root/workspace
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      #- ./python-uc/src:/bndf
+      #- ./python-uc/queries.py:/queries.py
+      #- ./python-uc/FingerprintGenerator.py:/FingerprintGenerator.py
+      #- ./python-uc/entrypoint.py:/entrypoint.py
+      #- ./python-uc/fingerprint_manualgenerator.py:/fingerprint_manualgenerator.py
+      #- ./python-uc/tunnel.sh:/tunnel.sh
+      #- ./python-uc/cedia-dnsmirror:/root/cedia-dnsmirror
+      #- ./python-uc/whitelist.txt:/root/whitelist.txt

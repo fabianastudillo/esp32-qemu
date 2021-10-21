@@ -1,0 +1,30 @@
+---
+
+- name: Setup raspberry pi
+  hosts: pi
+  tasks:
+    - name: Install mosquitto and lsof
+      apt:
+        name:
+          - mosquitto
+          - lsof
+        update_cache: yes
+        autoclean: yes
+        state: present
+      become: True
+
+    - name: Kill previous process running on port 8000, if exists
+      become: yes
+      shell: "pkill -9 $(lsof -t -i:8000)"
+      ignore_errors: True
+
+    - name: Update mosquitto configuration file to listen on port 8000
+      become: yes
+      blockinfile:
+        path: /etc/mosquitto/mosquitto.conf
+        block: |
+          listener 8000
+
+    - name: Restart mosquitto service
+      become: yes
+      shell: "/etc/init.d/mosquitto restart"
